@@ -17,6 +17,7 @@ package org.seleniumhq.selenium.fluent;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 import org.seleniumhq.selenium.fluent.internal.Context;
 import org.seleniumhq.selenium.fluent.internal.Execution;
 
@@ -27,6 +28,98 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
 public class TestableString extends Internal.BaseTestableObject<String> {
+
+
+    public interface Concatenator {
+        void start(String text);
+        void concat(TestableString text);
+    }
+
+    public interface StringChanger {
+        String chg(String text);
+    }
+
+    public static class NoopStringChanger implements StringChanger {
+        public String chg(String text) {
+            return text;
+        }
+    }
+
+    public static StringChanger trimmer() {
+        return new StringChanger() {
+            public String chg(String text) {
+                return text.trim();
+            }
+        };
+    }
+
+    public static StringChanger multiSpaceEliminator() {
+        return new StringChanger() {
+            public String chg(String text) {
+                StringBuilder sb = new StringBuilder(text.replaceAll("\t", " "));
+                int ix = sb.indexOf("  ");
+                while (ix >= 0) {
+                    sb.replace(ix, ix +2, " ");
+                    ix = sb.indexOf("  ");
+                }
+                return sb.toString();
+            }
+        };
+    }
+
+    public static StringChanger tabsToSpaces() {
+        return new StringChanger() {
+            public String chg(String text) {
+                return text.replaceAll("\t", " ");
+            }
+        };
+    }
+
+    public static StringChanger crToChars(final String chars) {
+        return new StringChanger() {
+            public String chg(String text) {
+                return text.replaceAll("\n", chars);
+            }
+        };
+    }
+
+    public static class DelimitWithChars implements Concatenator {
+
+        private String delimChar;
+        private String text = null;
+        private boolean delimitNow = false;
+
+        public DelimitWithChars(String delimChar) {
+            this.delimChar = delimChar;
+        }
+
+        public void start(String text) {
+            this.text = text;
+            if (!text.equals("")) {
+                delimitNow = true;
+            }
+        }
+
+        public void concat(TestableString text) {
+            this.text = this.text + (delimitNow ? this.delimChar : "") + text;
+            delimitNow = true;
+        }
+
+        @Override
+        public String toString() {
+            return text;
+        }
+    }
+
+    public static class DefaultConcatenator extends DelimitWithChars {
+        public DefaultConcatenator() {
+            super("");
+        }
+    }
+
+    public static Concatenator delimitWithChars(String charToDelimitWith) {
+        return new DelimitWithChars(charToDelimitWith);
+    }
 
     protected TestableString(Execution<String> execution, Context ctx, Monitor monitor) {
         this(null, execution, ctx, monitor);
@@ -79,6 +172,18 @@ public class TestableString extends Internal.BaseTestableObject<String> {
     public TestableString shouldNotMatch(final String regex) {
         validateWrapRethrow(new ShouldNotMatchValidation(new MatchesRegex(regex)),
                 Context.singular(context, "shouldNotMatch", null, regex));
+        return this;
+    }
+
+    public TestableString shouldMatch(Matcher<String> hamcrestMatcher) {
+        validateWrapRethrow(new ShouldHamcrestMatchValidation(hamcrestMatcher),
+                Context.singular(context, "shouldMatch", null, hamcrestMatcher));
+        return this;
+    }
+
+    public TestableString shouldNotMatch(Matcher<String> hamcrestMatcher) {
+        validateWrapRethrow(new ShouldNotHamcrestMatchValidation(hamcrestMatcher),
+                Context.singular(context, "shouldNotMatch", null, hamcrestMatcher));
         return this;
     }
 
@@ -149,6 +254,51 @@ public class TestableString extends Internal.BaseTestableObject<String> {
             assertThat(durationIfNotZero(start), is, matcher);
         }
     }
+    private class ShouldHamcrestMatchValidation extends Internal.Validation {
+        private final Matcher<String> hamcrestMatcher;
+
+        public ShouldHamcrestMatchValidation(Matcher<String> hamcrestMatcher) {
+            this.hamcrestMatcher = hamcrestMatcher;
+        }
+
+        @Override
+        public void validate(long start) {
+            assignValueIfNeeded();
+
+            if ((is != null && !hamcrestMatcher.matches(is)) && within != null) {
+                boolean passed;
+                long endMillis = calcEndMillis();
+                do {
+                    is = execution.doExecution();
+                    passed = is != null && hamcrestMatcher.matches(is);
+                } while (System.currentTimeMillis() < endMillis && !passed);
+            }
+            assertThat(durationIfNotZero(start), is, hamcrestMatcher);
+        }
+    }
+
+    private class ShouldNotHamcrestMatchValidation extends Internal.Validation {
+        private final Matcher<String> hamcrestMatcher;
+
+        public ShouldNotHamcrestMatchValidation(Matcher<String> hamcrestMatcher) {
+            this.hamcrestMatcher = hamcrestMatcher;
+        }
+
+        @Override
+        public void validate(long start) {
+            assignValueIfNeeded();
+            if ((is != null && hamcrestMatcher.matches(is)) && within != null) {
+                boolean passed;
+                long endMillis = calcEndMillis();
+                do {
+                    is = execution.doExecution();
+                    passed = is != null && !hamcrestMatcher.matches(is);
+                } while (System.currentTimeMillis() < endMillis && !passed);
+            }
+            assertThat(durationIfNotZero(start), is, not(hamcrestMatcher));
+        }
+    }
+
 
     private class ShouldNotMatchValidation extends Internal.Validation {
         private final MatchesRegex matcher;

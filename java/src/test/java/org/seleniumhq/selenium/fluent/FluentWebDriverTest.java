@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.seleniumhq.selenium.fluent.TestableString.delimitWithChars;
 
 public class FluentWebDriverTest extends BaseTest {
 
@@ -438,10 +439,36 @@ public class FluentWebDriverTest extends BaseTest {
 
         when(we.getText()).thenReturn("Mary had 3 little lamb(s).");
         when(we2.getText()).thenReturn("Mary had 4 little lamb(s).");
-        CharSequence text = elems.getText().toString();
-        assertThat(text.toString(), equalTo("Mary had 3 little lamb(s).Mary had 4 little lamb(s)."));
+
+        assertThat(elems.getText().toString(), equalTo("Mary had 3 little lamb(s).Mary had 4 little lamb(s)."));
+
+        assertThat(elems.getText(delimitWithChars("|")).toString(), equalTo("Mary had 3 little lamb(s).|Mary had 4 little lamb(s)."));
+
+        assertThat(elems.getText(fredNotMary()).toString(), equalTo("Fred had 3 little lamb(s).Fred had 4 little lamb(s)."));
+
+        assertThat(elems.getText(fredNotMary(), noTrailingDot()).toString(), equalTo("Fred had 3 little lamb(s)Fred had 4 little lamb(s)"));
+
+        assertThat(elems.getText(delimitWithChars("<<>>"), fredNotMary()).toString(), equalTo("Fred had 3 little lamb(s).<<>>Fred had 4 little lamb(s)."));
+
+        assertThat(elems.getText(delimitWithChars("<<>>"), fredNotMary(), noTrailingDot()).toString(), equalTo("Fred had 3 little lamb(s)<<>>Fred had 4 little lamb(s)"));
 
     }
+
+    private TestableString.StringChanger fredNotMary() {
+        return new TestableString.StringChanger() {
+            public String chg(String text) {
+                return text.replace("Mary", "Fred");
+            }
+        };
+    }
+    private TestableString.StringChanger noTrailingDot() {
+        return new TestableString.StringChanger() {
+            public String chg(String text) {
+                return text.endsWith(".") ? text.substring(0, text.length()-1) : text;
+            }
+        };
+    }
+
 
     @Test
     public void runtime_exceptions_decorated_for_first() {

@@ -440,6 +440,11 @@ public class Internal {
             return newFluentWebElements(multiple(by, "area"));
         }
 
+        protected BaseFluentWebElement body() {
+            SingleResult single = single(tagName("body"), "body");
+            return newFluentWebElement(delegate, single.getResult(), single.getCtx());
+        }
+
         protected BaseFluentWebElements abbrs() {
             return newFluentWebElements(multiple(tagName("abbr"), "abbr"));
         }
@@ -1398,5 +1403,8 @@ public class Internal {
 
         public <X> X getScreenshotAs(OutputType<X> outputType) throws WebDriverException { throw new UnsupportedOperationException(); }
 
+        public Rectangle getRect() {
+            throw new UnsupportedOperationException();
+        }
     }
 }

@@ -2,14 +2,14 @@ package org.seleniumhq.selenium.fluent;
 
 import org.junit.Test;
 import org.openqa.selenium.*;
-import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
 
 import java.util.List;
 
-import static com.thoughtworks.selenium.SeleneseTestBase.assertEquals;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 
 public class StaleRecoveringTest {
 
@@ -81,7 +81,7 @@ public class StaleRecoveringTest {
 
     }
 
-    private static class FirstGetAttributeIsStaleDriver extends FirefoxDriver {
+    private static class FirstGetAttributeIsStaleDriver extends ChromeDriver {
         public final int[] countOfGetAttribute = {0};
         public final boolean[] staleElementThrown = {false};
 
@@ -157,6 +157,10 @@ public class StaleRecoveringTest {
                 }
 
                 public <X> X getScreenshotAs(OutputType<X> outputType) throws WebDriverException { return we.getScreenshotAs(outputType); }
+
+                public Rectangle getRect() {
+                    return we.getRect();
+                }
             };
         }
     }

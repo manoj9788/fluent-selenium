@@ -8,7 +8,7 @@
     <groupId>org.seleniumhq.selenium.fluent</groupId>
     <artifactId>fluent-selenium</artifactId>
     <packaging>jar</packaging>
-    <version>1.16.1-SNAPSHOT</version>
+    <version>1.18-SNAPSHOT</version>
     <name>fluent-selenium</name>
     <description>A Fluent API on top of Selenium's WebDriver API</description>
     <url>http://github.com/SeleniumHQ/fluent-selenium</url>
@@ -52,7 +52,7 @@
         <dependency>
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-java</artifactId>
-            <version>2.48.2</version>
+            <version>[3.3.1,)</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.hamcrest</groupId>
@@ -127,7 +127,7 @@
             <roles>
                 <role>developer</role>
             </roles>
-            <timezone>-6</timezone>
+            <timezone>-5</timezone>
         </developer>
     </developers>
     <distributionManagement>

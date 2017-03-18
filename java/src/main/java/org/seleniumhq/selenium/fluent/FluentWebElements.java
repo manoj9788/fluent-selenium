@@ -96,6 +96,21 @@ public class FluentWebElements extends Internal.BaseFluentWebElements {
         return new TestableString(new GetText(), ctx, monitor).within(getPeriod());
     }
 
+    public TestableString getText(TestableString.Concatenator concator) {
+        Context ctx = Context.singular(context, "getText");
+        return new TestableString(new GetText(concator), ctx, monitor).within(getPeriod());
+    }
+
+    public TestableString getText(TestableString.StringChanger... stringChangers) {
+        Context ctx = Context.singular(context, "getText");
+        return new TestableString(new GetText(stringChangers), ctx, monitor).within(getPeriod());
+    }
+
+    public TestableString getText(TestableString.Concatenator concator, TestableString.StringChanger... stringChangers) {
+        Context ctx = Context.singular(context, "getText");
+        return new TestableString(new GetText(concator, stringChangers), ctx, monitor).within(getPeriod());
+    }
+
     public <K, V> Map<K,V> map(FluentWebElementMap<K,V> mapper) {
         int ix = -1;
         for (FluentWebElement next : currentElements) {
@@ -303,12 +318,31 @@ public class FluentWebElements extends Internal.BaseFluentWebElements {
     }
 
     private class GetText extends Execution<String> {
+        private TestableString.Concatenator concatenator = new TestableString.DefaultConcatenator();
+        private TestableString.StringChanger[] stringChangers = new TestableString.StringChanger[] { new TestableString.NoopStringChanger() };
+
+        public GetText() {
+        }
+
+        public GetText(TestableString.Concatenator concatenator) {
+            this.concatenator = concatenator;
+        }
+
+        public GetText(TestableString.StringChanger... stringChangers) {
+            this.stringChangers = stringChangers;
+        }
+
+        public GetText(TestableString.Concatenator concatenator, TestableString.StringChanger... stringChangers) {
+            this.stringChangers = stringChangers;
+            this.concatenator = concatenator;
+        }
+
         public String execute() {
-            String text = "";
+            concatenator.start("");
             for (FluentWebElement fwe : FluentWebElements.this) {
-                text = text + fwe.getText();
+                concatenator.concat(fwe.getText(stringChangers));
             }
-            return text;
+            return concatenator.toString();
         }
     }
 

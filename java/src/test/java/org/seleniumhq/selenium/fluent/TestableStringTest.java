@@ -1,5 +1,6 @@
 package org.seleniumhq.selenium.fluent;
 
+import org.hamcrest.core.IsEqual;
 import org.junit.Test;
 import org.seleniumhq.selenium.fluent.internal.Context;
 import org.seleniumhq.selenium.fluent.internal.Execution;
@@ -254,12 +255,63 @@ public class TestableStringTest {
         }
     }
 
+    @Test
+    public void stringShouldHamcrestMatchSomething() {
+        Context ctx = Context.singular(null, "dummy2");
+        new TestableString(MARY_EXECUTION, ctx, new Monitor.NULL()).shouldMatch(new IsEqual<String>("Mary Has 12 Little Lambs"));
+        try {
+            new TestableString(MARY_EXECUTION, ctx, new Monitor.NULL()).shouldMatch(new IsEqual<String>("qqq"));
+            fail("should have barfed");
+        } catch (FluentExecutionStopped e) {
+            assertThat(e.getMessage(), equalTo("AssertionError during invocation of: ?.dummy2().shouldMatch('\"qqq\"')"));
+            assertThat(getCauseMessage(e), equalTo("\nExpected: \"qqq\"\n     but: was \"Mary Has 12 Little Lambs\""));
+        }
+    }
+
+
+    @Test
+    public void stringShouldNotHamcrestMatchSomething() {
+        Context ctx = Context.singular(null, "dummy2");
+        new TestableString(MARY_EXECUTION, ctx, new Monitor.NULL()).shouldNotMatch(new IsEqual<String>("qqq"));
+        try {
+            new TestableString(MARY_EXECUTION, ctx, new Monitor.NULL()).shouldNotMatch(new IsEqual<String>("Mary Has 12 Little Lambs"));
+            fail("should have barfed");
+        } catch (FluentExecutionStopped e) {
+            assertThat(e.getMessage(), equalTo("AssertionError during invocation of: ?.dummy2().shouldNotMatch('\"Mary Has 12 Little Lambs\"')"));
+            assertThat(getCauseMessage(e), equalTo("\nExpected: not \"Mary Has 12 Little Lambs\"\n     but: was \"Mary Has 12 Little Lambs\""));
+        }
+    }
+
     private String getCauseMessage(FluentExecutionStopped e) {
         return e.getCause().getMessage()
                 .replace("1001", "1000")
                 .replace("1002", "1000")
                 .replace("(after 1 ms)", "")
                 .replace("(after 2 ms)", "");
+    }
+
+    @Test
+    public void trimmerShouldTrimStrings() {
+        TestableString.StringChanger trimmer = TestableString.trimmer();
+        assertThat(trimmer.chg("  a  "), equalTo("a"));
+    }
+
+    @Test
+    public void testCRstoChars() {
+        TestableString.StringChanger crToChars = TestableString.crToChars(";");
+        assertThat(crToChars.chg("a\nb\nc"), equalTo("a;b;c"));
+    }
+
+    @Test
+    public void testMultiSpaceEliminator() {
+        TestableString.StringChanger multiSpaceEliminator = TestableString.multiSpaceEliminator();
+        assertThat(multiSpaceEliminator.chg("  a          b     c  "), equalTo(" a b c "));
+    }
+
+    @Test
+    public void testTabsToSpacesChanger() {
+        TestableString.StringChanger multiSpaceEliminator = TestableString.tabsToSpaces();
+        assertThat(multiSpaceEliminator.chg(" a \t b\tc "), equalTo(" a   b c "));
     }
 
 }
